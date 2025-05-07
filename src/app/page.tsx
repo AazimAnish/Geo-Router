@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import opencage from 'opencage-api-client';
 
 export default function Home() {
+
+  const [location, setLocation] = useState('')
 
   useEffect(() => {
     const checkGeoLocationPermission = async () => {
@@ -11,8 +14,21 @@ export default function Home() {
           const result = await navigator.permissions.query({ name: "geolocation" });
           console.log("Permission status:", result.state);
 
-          const success = (position: GeolocationPosition) => {
-            console.log("User location:", position.coords);
+          const success = async (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            console.log("User location:", latitude, longitude);
+
+              const data = await opencage.geocode({
+                q: `${latitude},${longitude}`,
+                key: process.env.NEXT_PUBLIC_OPENCAGE_API_KEY
+              });
+
+              if (data.status.code === 200 && data.results.length > 0) {
+                console.log("Formatted address:", data.results[0].formatted);
+                setLocation(data.results[0].formatted);
+              } else {
+                console.warn("No results found from OpenCage");
+              }
           };
 
           const error = (err: GeolocationPositionError) => {
@@ -42,7 +58,9 @@ export default function Home() {
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <h1>Hello World!</h1>
+      <div className="text-4xl font-bold">
+        Current Location: {location};
+      </div>
     </div>
   );
 }
